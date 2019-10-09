@@ -130,9 +130,10 @@ set_target_properties(blaspp
 )
 
 # CUDA is not required
-find_package(CUDA)
+#find_package(CUDA)
 
 if(CUDA_FOUND)
+    # todo: check for cuda 10.0+ and force newer CMake version - if possible
     message(STATUS "Building accelerated CUDA wrappers.")
     target_sources(blaspp PRIVATE
         src/device_batch_gemm.cc
@@ -275,11 +276,10 @@ target_compile_definitions(blaspp PUBLIC
     # example: -fopenmp -DFORTRAN_ADD_ -DADD_ -DHAVE_BLAS -DBLAS_COMPLEX_RETURN_ARGUMENT -DHAVE_MKL -DHAVE_CBLAS -DHAVE_LAPACK
     ${FORTRAN_MANGLING_DEFINES}
     ${BLAS_DEFINES}
-    ${BLAS_COMPLEX_RETURN}
-    ${BLAS_FLOAT_RETURN}
+    ${BLAS_RETURN}
     ${LIB_DEFINES}
-    ${CBLAS_DEFINES}
-    ${LAPACK_DEFINES}
+    #${CBLAS_DEFINES}
+    #${LAPACK_DEFINES}
     ${BLAS_int}
 )
 
@@ -295,16 +295,17 @@ endif()
 
 install (TARGETS blaspp
     EXPORT blasppTargets
-    LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
-    INCLUDES DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    INCLUDES DESTINATION include
     )
 
 #export(EXPORT blasppTargets
-  #FILE ${CMAKE_INSTALL_PREFIX}/blasppTargets.cmake
+  #FILE ${CMAKE_INSTALL_PREFIX}/blaspp/blasppTargets.cmake
 export(EXPORT blasppTargets
     FILE blasppTargets.cmake
 )
-#FILE ${CMAKE_INSTALL_PREFIX}/blasppTargets.cmake
+#FILE ${CMAKE_INSTALL_PREFIX}/blaspp/blasppTargets.cmake
 
 export (PACKAGE blaspp)
 
@@ -317,27 +318,24 @@ configure_file(
 
 install (EXPORT blasppTargets
     FILE blasppTargets.cmake
-    DESTINATION ${CMAKE_INSTALL_PREFIX}
+    DESTINATION lib/blaspp
 )
 
 install(
-    DIRECTORY
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-    DESTINATION
-        ${CMAKE_INSTALL_PREFIX}
+    DIRECTORY include/
+    DESTINATION include
 )
 
 install (
-    FILES
-        ${CMAKE_CURRENT_SOURCE_DIR}/blasppConfig.cmake
-    DESTINATION
-        ${CMAKE_INSTALL_PREFIX}
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/blasppConfig.cmake
+    DESTINATION lib/blaspp
 )
 
 # Testers are built by default, but will not be included if Libtest is not found
 # Set CMAKE_INSTALL_PREFIX during the installation of Libtest and BLAS++ or
 #   set libtest_DIR to the path containing libtestConfig.cmake
 if (BLASPP_BUILD_TESTS)
+    if(0)
     if (libtest_DIR)
         set (libtest_search_path ${libtest_DIR})
         set (libtest_DIR "")
@@ -347,7 +345,11 @@ if (BLASPP_BUILD_TESTS)
             ${CMAKE_INSTALL_PREFIX}/test
             ${libtest_search_path}
     )
-    if (NOT libtest_DIR MATCHES "NOTFOUND")
+    endif()
+    find_package(libtest)
+    message("libtest_found: ${libtest_FOUND}")
+    if (libtest_FOUND)
+    #if (NOT libtest_DIR MATCHES "NOTFOUND" AND NOT libtest_FOUND)
         message(STATUS "Blaspp tests will be built.")
         add_subdirectory(test)
     else()
